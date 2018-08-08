@@ -1,6 +1,4 @@
-﻿using Unity.Collections;
-using Unity.Entities;
-using Unity.Jobs;
+﻿using Unity.Jobs;
 
 public struct CountExistingComponentsJob : IJobParallelFor
 {
@@ -9,6 +7,5 @@ public struct CountExistingComponentsJob : IJobParallelFor
 	public void Execute(int index)
 	{
         _count++;
-        //UnityEngine.Debug.Log("Count " + _count);
 	}
 }

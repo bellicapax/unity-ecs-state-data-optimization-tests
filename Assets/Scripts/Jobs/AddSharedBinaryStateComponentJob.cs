@@ -2,7 +2,7 @@
 using Unity.Entities;
 using Unity.Jobs;
 
-public struct AddBinaryStateComponentJob : IJobParallelFor
+public struct AddSharedBinaryStateComponentJob : IJobParallelFor
 {
     [ReadOnly] public EntityArray Entities;
     public EntityCommandBuffer.Concurrent CommandBuffer;

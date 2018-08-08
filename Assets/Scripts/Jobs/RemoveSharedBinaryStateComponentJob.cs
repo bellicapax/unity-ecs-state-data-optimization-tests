@@ -2,7 +2,7 @@
 using Unity.Entities;
 using Unity.Jobs;
 
-public struct RemoveBinaryStateComponentJob : IJobParallelFor
+public struct RemoveSharedBinaryStateComponentJob : IJobParallelFor
 {
     [ReadOnly] public EntityArray Entities;
     public EntityCommandBuffer.Concurrent CommandBuffer;
