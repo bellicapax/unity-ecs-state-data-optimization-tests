@@ -285,6 +285,9 @@ public class UpdateStateSystem : JobComponentSystem
         if (_config.InterestingStateCount == 0)
             _config.InterestingStateCount = 1;
 
+        if (_config.InterestingStateCount > _config.TotalStateCount)
+            _config.TotalStateCount = _config.InterestingStateCount;
+
         switch (_config.Method)
         {
             case TestMethod.InstancedByteComponent:
