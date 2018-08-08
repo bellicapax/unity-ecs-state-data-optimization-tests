@@ -11,6 +11,8 @@ public class UpdateStateSystem : JobComponentSystem
     [Inject] private WithSharedBinaryComponentGroup _groupWithSharedBinaryComponent;
     [Inject] private WithoutSharedBinaryComponentGroup _groupWithoutSharedBinaryComponent;
     [Inject] private WithInstancedByteComponentGroup _groupWithInstancedByteComponent;
+    [Inject] private WithInstancedBinaryComponentGroup _groupWithInstancedBinaryComponent;
+    [Inject] private WithoutInstancedBinaryComponentGroup _groupWithoutInstancedBinaryComponent;
 
     private NativeArray<byte> _statesToWrite;
     private NativeArray<byte> _statesToCheckFor;
@@ -50,26 +52,27 @@ public class UpdateStateSystem : JobComponentSystem
         switch (_config.Method)
         {
             case TestMethod.InstancedByteComponent:
-                if (_config.InterestingStateCount > 0)
+                if (_config.InterestingStateCount == 1)
                 {
-                    if (_config.InterestingStateCount == 1)
+                    return new CountSpecificInstancedByteStateJob
                     {
-                        return new CountSpecificInstancedByteStateJob
-                        {
-                            Components = _groupWithInstancedByteComponent.Components,
-                            StateToCheckFor = 0
-                        }.Schedule(_groupWithInstancedByteComponent.Length, 64, inputDeps);
-                    }
-                    else
-                    {
-                        return new CountMultipleInstancedByteStatesJob
-                        {
-                            Components = _groupWithInstancedByteComponent.Components,
-                            StatesToCheckFor = _statesToCheckFor
-                        }.Schedule(_groupWithInstancedByteComponent.Length, 64, inputDeps);
-                    }
+                        Components = _groupWithInstancedByteComponent.Components,
+                        StateToCheckFor = 0
+                    }.Schedule(_groupWithInstancedByteComponent.Length, 64, inputDeps);
                 }
-                return inputDeps;
+                else
+                {
+                    return new CountMultipleInstancedByteStatesJob
+                    {
+                        Components = _groupWithInstancedByteComponent.Components,
+                        StatesToCheckFor = _statesToCheckFor
+                    }.Schedule(_groupWithInstancedByteComponent.Length, 64, inputDeps);
+                }
+
+            case TestMethod.AddRemoveInstancedComponent:
+                return new CountExistingComponentsJob
+                {
+                }.Schedule(_groupWithInstancedBinaryComponent.Length, 64, inputDeps);
 
             case TestMethod.AddRemoveSharedComponent:
                 return new CountExistingComponentsJob
@@ -96,32 +99,28 @@ public class UpdateStateSystem : JobComponentSystem
                 return inputDeps;
 
             case TestMethod.SetValueSharedComponentSetFilter:
-                if (_config.InterestingStateCount > 0)
+                if (_config.InterestingStateCount == 1)
                 {
-                    if (_config.InterestingStateCount == 1)
+                    var handle = ScheduleCountForFilterWithState(0, inputDeps);
+                    _byteStateGroup.ResetFilter();
+                    return handle;
+                }
+                else
+                {
+                    var filterHandles = new NativeList<JobHandle>(_config.InterestingStateCount, Allocator.Temp);
+                    for (int i = 0; i < _config.InterestingStateCount; i++)
                     {
-                        var handle = ScheduleCountForFilterWithState(0, inputDeps);
-                        _byteStateGroup.ResetFilter();
-                        return handle;
+                        filterHandles.Add(ScheduleCountForFilterWithState(i, inputDeps));
                     }
-                    else
-                    {
-                        var filterHandles = new NativeList<JobHandle>(_config.InterestingStateCount, Allocator.Temp);
-                        for (int i = 0; i < _config.InterestingStateCount; i++)
-                        {
-                            filterHandles.Add(ScheduleCountForFilterWithState(i, inputDeps));
-                        }
-                        var combinedFilterHandles = JobHandle.CombineDependencies(filterHandles);
-                        _byteStateGroup.ResetFilter();
-                        filterHandles.Dispose();
-                    }
-
+                    var combinedFilterHandles = JobHandle.CombineDependencies(filterHandles);
+                    _byteStateGroup.ResetFilter();
+                    filterHandles.Dispose();
                 }
                 return inputDeps;
 
             case TestMethod.SetValueSharedComponentNoFilter:
                 var length = _byteStateGroup.CalculateLength();
-                if (length > 0 && _config.InterestingStateCount > 0)
+                if (length > 0)
                 {
                     if (_config.InterestingStateCount == 1)
                     {
@@ -186,20 +185,43 @@ public class UpdateStateSystem : JobComponentSystem
                     States = _statesToWrite
                 }.Schedule(_config.ChangesPerFrame, 64, inputDeps);
 
+            case TestMethod.AddRemoveInstancedComponent:
+                var instancedAdds = Mathf.Min(_groupWithoutInstancedBinaryComponent.Length, _config.ChangesPerFrame - (_config.ChangesPerFrame / 2));
+                var instancedRemoves = Mathf.Min(_groupWithInstancedBinaryComponent.Length, _config.ChangesPerFrame - instancedAdds);
+                if (instancedAdds > 0 && instancedRemoves > 0)
+                {
+                    return JobHandle.CombineDependencies(
+                        ScheduleAddingInstancedBinaryComponents(instancedAdds, inputDeps),
+                        ScheduleRemovingInstancedBinaryComponents(instancedRemoves, inputDeps));
+                }
+                else if(instancedAdds > 0)
+                {
+                    return ScheduleAddingInstancedBinaryComponents(instancedAdds, inputDeps);
+                }
+                else if(instancedRemoves > 0)
+                {
+                    return ScheduleRemovingInstancedBinaryComponents(instancedRemoves, inputDeps);
+                }
+                return inputDeps;
+
             case TestMethod.AddRemoveSharedComponent:
-                var adds = _config.ChangesPerFrame - (_config.ChangesPerFrame / 2);
-                var removes = _config.ChangesPerFrame - adds;
-                var removeHandle = new RemoveSharedBinaryStateComponentJob
+                var sharedAdds = Mathf.Min(_groupWithoutSharedBinaryComponent.Length, _config.ChangesPerFrame - (_config.ChangesPerFrame / 2));
+                var sharedRemoves = Mathf.Min(_groupWithSharedBinaryComponent.Length, _config.ChangesPerFrame - sharedAdds);
+                if (sharedAdds > 0 && sharedRemoves > 0)
                 {
-                    Entities = _groupWithSharedBinaryComponent.Entities,
-                    CommandBuffer = _endFrameBarrier.CreateCommandBuffer()
-                }.Schedule(removes, 64, inputDeps);
-                var addHandle = new AddSharedBinaryStateComponentJob
+                    return JobHandle.CombineDependencies(
+                        ScheduleAddingSharedBinaryComponents(sharedAdds, inputDeps),
+                        ScheduleRemovingSharedBinaryComponents(sharedRemoves, inputDeps));
+                }
+                else if (sharedAdds > 0)
                 {
-                    Entities = _groupWithoutSharedBinaryComponent.Entities,
-                    CommandBuffer = _endFrameBarrier.CreateCommandBuffer()
-                }.Schedule(adds, 64, inputDeps);
-                return JobHandle.CombineDependencies(removeHandle, addHandle);
+                    return ScheduleAddingSharedBinaryComponents(sharedAdds, inputDeps);
+                }
+                else if (sharedRemoves > 0)
+                {
+                    return ScheduleRemovingSharedBinaryComponents(sharedRemoves, inputDeps);
+                }
+                return inputDeps;
 
             case TestMethod.SetValueSharedComponentForEachFilter:
             case TestMethod.SetValueSharedComponentSetFilter:
@@ -216,6 +238,41 @@ public class UpdateStateSystem : JobComponentSystem
         }
     }
 
+    private JobHandle ScheduleAddingInstancedBinaryComponents(int instancedAdds, JobHandle inputDeps)
+    {
+        return new AddInstancedBinaryStateComponentJob
+        {
+            Entities = _groupWithoutInstancedBinaryComponent.Entities,
+            CommandBuffer = _endFrameBarrier.CreateCommandBuffer()
+        }.Schedule(instancedAdds, 64, inputDeps);
+    }
+
+    private JobHandle ScheduleRemovingInstancedBinaryComponents(int instancedRemoves, JobHandle inputDeps)
+    {
+        return new RemoveInstancedBinaryStateComponentJob
+        {
+            Entities = _groupWithInstancedBinaryComponent.Entities,
+            CommandBuffer = _endFrameBarrier.CreateCommandBuffer()
+        }.Schedule(instancedRemoves, 64, inputDeps);
+    }
+
+    private JobHandle ScheduleAddingSharedBinaryComponents(int sharedAdds, JobHandle inputDeps)
+    {
+        return new AddSharedBinaryStateComponentJob
+        {
+            Entities = _groupWithoutSharedBinaryComponent.Entities,
+            CommandBuffer = _endFrameBarrier.CreateCommandBuffer()
+        }.Schedule(sharedAdds, 64, inputDeps);
+    }
+
+    private JobHandle ScheduleRemovingSharedBinaryComponents(int sharedRemoves, JobHandle inputDeps)
+    {
+        return new RemoveSharedBinaryStateComponentJob
+        {
+            Entities = _groupWithSharedBinaryComponent.Entities,
+            CommandBuffer = _endFrameBarrier.CreateCommandBuffer()
+        }.Schedule(sharedRemoves, 64, inputDeps);
+    }
     #endregion
 
     #region Initialization Helpers
@@ -231,9 +288,10 @@ public class UpdateStateSystem : JobComponentSystem
         switch (_config.Method)
         {
             case TestMethod.InstancedByteComponent:
-                CreateEntitiesWithArchetype(EntityManager.CreateArchetype(typeof(InstancedByteStateComponent)));
+                CreateEntitiesWithArchetype(EntityManager.CreateArchetype(typeof(InstancedByteState)));
                 break;
 
+            case TestMethod.AddRemoveInstancedComponent:
             case TestMethod.AddRemoveSharedComponent:
                 for (int i = 0; i < _config.EntityCount; i++)
                 {

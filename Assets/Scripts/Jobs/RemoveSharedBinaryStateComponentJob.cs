@@ -9,7 +9,6 @@ public struct RemoveSharedBinaryStateComponentJob : IJobParallelFor
 
     public void Execute(int index)
     {
-        if (index < Entities.Length)
-            CommandBuffer.RemoveComponent<SharedBinaryState>(Entities[index]);
+        CommandBuffer.RemoveComponent<SharedBinaryState>(Entities[index]);
     }
 }

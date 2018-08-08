@@ -1,7 +1,7 @@
 ﻿
 public enum TestMethod
 {
-    //InstancedBinaryComponent = 0,
+    AddRemoveInstancedComponent = 0,
     InstancedByteComponent = 1,
     AddRemoveSharedComponent = 2,
     SetValueSharedComponentForEachFilter = 3,

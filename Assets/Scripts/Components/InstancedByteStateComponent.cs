@@ -1,6 +1,6 @@
 ﻿using Unity.Entities;
 
-public struct InstancedByteStateComponent : IComponentData
+public struct InstancedByteState : IComponentData
 {
     public byte State;
 }

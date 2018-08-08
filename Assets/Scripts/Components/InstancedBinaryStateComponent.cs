@@ -1,6 +1,5 @@
 ﻿using Unity.Entities;
 
-public struct InstancedBinaryStateComponent : IComponentData
+public struct InstancedBinaryState : IComponentData
 {
-    public bool IsState;
 }

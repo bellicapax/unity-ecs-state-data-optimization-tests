@@ -4,11 +4,11 @@ using Unity.Jobs;
 
 public struct UpdateInstancedByteStateJob : IJobParallelFor
 {
-    [WriteOnly] [NativeDisableParallelForRestriction] public ComponentDataArray<InstancedByteStateComponent> Components;
+    [WriteOnly] [NativeDisableParallelForRestriction] public ComponentDataArray<InstancedByteState> Components;
     [ReadOnly] public NativeArray<byte> States;
 
     public void Execute(int index)
 	{
-        Components[index] = new InstancedByteStateComponent { State = States[index] };
+        Components[index] = new InstancedByteState { State = States[index] };
 	}
 }

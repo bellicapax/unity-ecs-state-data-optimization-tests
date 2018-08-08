@@ -4,7 +4,7 @@ using Unity.Jobs;
 
 public struct CountMultipleInstancedByteStatesJob : IJobParallelFor
 {
-    [ReadOnly] public ComponentDataArray<InstancedByteStateComponent> Components;
+    [ReadOnly] public ComponentDataArray<InstancedByteState> Components;
     [ReadOnly] public NativeArray<byte> StatesToCheckFor;
     private int _count;
 

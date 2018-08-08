@@ -17,6 +17,20 @@ public struct WithoutSharedBinaryComponentGroup
 
 public struct WithInstancedByteComponentGroup
 {
-    public ComponentDataArray<InstancedByteStateComponent> Components;
+    public ComponentDataArray<InstancedByteState> Components;
+    public readonly int Length;
+}
+
+public struct WithInstancedBinaryComponentGroup
+{
+    [ReadOnly] public ComponentDataArray<InstancedBinaryState> InterestingComponents;
+    [ReadOnly] public EntityArray Entities;
+    public readonly int Length;
+}
+
+public struct WithoutInstancedBinaryComponentGroup
+{
+    [ReadOnly] public SubtractiveComponent<InstancedBinaryState> NoBinaryState;
+    [ReadOnly] public EntityArray Entities;
     public readonly int Length;
 }
