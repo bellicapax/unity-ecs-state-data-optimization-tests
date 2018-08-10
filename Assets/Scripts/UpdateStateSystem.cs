@@ -62,6 +62,7 @@ public class UpdateStateSystem : JobComponentSystem
                 }
                 else
                 {
+                    FillStatesToCheckFor();
                     return new CountMultipleInstancedByteStatesJob
                     {
                         Components = _groupWithInstancedByteComponent.Components,
@@ -132,6 +133,7 @@ public class UpdateStateSystem : JobComponentSystem
                     }
                     else
                     {
+                        FillStatesToCheckFor();
                         return new CountMultipleSharedByteStatesJob
                         {
                             Components = _byteStateGroup.GetSharedComponentDataArray<SharedByteState>(),
@@ -166,7 +168,7 @@ public class UpdateStateSystem : JobComponentSystem
                 return new CreateCommandsJob
                 {
                     Commands = _statesToWrite,
-                    StateCount = _config.TotalStateCount
+                    StateCount = (byte)_config.TotalStateCount
                 }.Schedule(_config.ChangesPerFrame, 64, inputDeps);
 
             default:
@@ -279,14 +281,14 @@ public class UpdateStateSystem : JobComponentSystem
 
     private void SpawnInitialEntities()
     {
-        if (_config.Method == TestMethod.AddRemoveSharedComponent || _config.TotalStateCount == 0)
-            _config.TotalStateCount = 1;
+        //if (_config.Method == TestMethod.AddRemoveSharedComponent || _config.TotalStateCount == 0)
+        //    _config.TotalStateCount = 1;
 
-        if (_config.InterestingStateCount == 0)
-            _config.InterestingStateCount = 1;
+        //if (_config.InterestingStateCount == 0)
+        //    _config.InterestingStateCount = 1;
 
-        if (_config.InterestingStateCount > _config.TotalStateCount)
-            _config.TotalStateCount = _config.InterestingStateCount;
+        //if (_config.InterestingStateCount > _config.TotalStateCount)
+        //    _config.TotalStateCount = _config.InterestingStateCount;
 
         switch (_config.Method)
         {

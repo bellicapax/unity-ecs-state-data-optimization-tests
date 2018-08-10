@@ -13,6 +13,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Method: 1
   _entityCount: 20000
-  _changesPerFrame: 10113
-  TotalStateCount: 50
-  InterestingStateCount: 50
+  _changesPerFrame:
+    _min: 0
+    _max: 0
+    _constant: 0
+    Randomize: 0
+  _totalStateCount:
+    _min: 0
+    _max: 0
+    _constant: 0
+    Randomize: 0
+  _interestingStateCount:
+    _min: 0
+    _max: 0
+    _constant: 0
+    Randomize: 0
